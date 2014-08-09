@@ -9,7 +9,7 @@
  * Copies in various templates as a starting point.
  */
 
-require_once "Colors.class";
+require_once "Colors.php";
 
 /**
  * Entry point.
