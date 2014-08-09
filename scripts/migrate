@@ -1,0 +1,340 @@
+#!/usr/bin/php
+<?php
+/**	(c) 2011 Everett Morse
+*	
+*	Migration script.
+*	Simple version, so I just have a migrations folder with files named 1.php ... n.php and the
+*	script will look for the 'database_version' table or else create it.
+*/
+define('MIGRATIONS_DIR',dirname(__FILE__).'/../app/migrations');
+define('VERSION','1.1');
+include_once dirname(__FILE__).'/../lib/engine/autoload.php';
+require_once dirname(__FILE__).'/../config/config.php'; //for database
+
+
+/**
+ * Main entry point
+ */
+function main($args) {
+	$flags = array();
+	
+	//Look for any flags first
+	$i = 1;
+	while($i < count($args) && substr($args[$i],0,1) == "-") {
+		$argstr = $args[$i];
+		for($j = 1; $j < strlen($argstr); $j++) {
+			$flag = substr($argstr,$j,1);
+			if( $flag == '-' && $j == 1 ) { //long form
+				$flag = substr($args[$i],2);
+				$j = strlen($argstr);
+			}
+			switch($flag) {
+				case 'd': case 'database':
+					if( !isset($args[$i+1]) ) {
+						echo "ERROR: missing database name\n";
+					}
+					Db::$db = $args[$i+1];
+					$i++;
+					break;
+				case 'silent': $flags['s'] = true; break;
+				default: $flags[$flag] = true; break;
+			}
+		}
+		$i++;
+	}
+	
+	$verb = isset($args[$i])? $args[$i] : "";
+	if( isset($flags['h']) || isset($flags['help']) ||
+		!in_array($verb, array('help','up','down','info', 'version')) 
+	) {
+		help();
+		return;
+	}
+	
+	if( isset($args[$i+1]) )
+		$verb($args[$i+1], $flags);
+	else
+		$verb(null, $flags);
+}
+
+////////////// ACTIONS ////////////////////
+
+function help($with = null) {
+	if( $with == 'up' ) {
+		echo "Usage: migrate up [version]\n\n";
+		echo "If version is given, migrates from current up to target version one at a time.\n";
+		echo "If no version is give, migrates up from current one at a time until it can't \n";
+		echo "find the next version.\n";
+		exit;
+	} else if( $with == 'down' ) {
+		echo "Usage: migrate down [version]\n\n";
+		echo "If version is given, migrates from current down to target version one at a time.\n";
+		echo "If no version is give, migrates down by one version, reverting the last migration.\n";
+		echo "\nOptions:\n";
+		echo "  -f    Force\n";
+		echo "    The version given is the migration who's down operation you want to force.\n";
+		exit;
+	} else if( $with == 'info' ) {
+		echo "Usage: migrate info [version]\n\n";
+		echo "If version is given, prints the comment for that version.\n";
+		echo "If no version is give, prints the comment for all versions up to and including \n.";
+		echo "the current one, as well as printing last modified time.\n";
+		exit;
+	}
+	
+	echo "Usage: migrate <verb> <options>\n";
+	echo "\n";
+	echo "Verbs:\n";
+	echo "\tup      -- migrate up to target version, or to latest.\n";
+	echo "\tdown    -- migrate down to target version, or revert most recent migration.\n";
+	echo "\tinfo    -- print info about a migration or all the migrations applied.\n";
+	echo "\thelp    -- print this help message, or help on a verb.\n";
+	echo "\tversion -- prints the version of this script.\n";
+	echo "\n";
+	echo "Global Flags:\n";
+	echo "\td | database <name> -- Override config to use the specified database name.\n";
+	echo "\ts | silent -- Don't print so much chatter. Exit with non-zero if failed.\n";
+}
+
+function version() {
+	echo "DispatchMVC migration assistant version ".constant('VERSION')."\n";
+}
+
+function up($vers = null, $flags) {
+	if($vers !== null && !is_numeric($vers) ) {
+		echo "Cannot interpret version \"$vers\", must be a number\n";
+		return;
+	}
+	ensureInstalled();
+	
+	$current = getVersion();
+	if( $vers === null ) {
+		if( !$flags['s'] ) echo "Migrating up to maximum version from $current ...\n";
+		$migration = getMigration($current + 1);
+		while($migration !== null) {
+			$target = $current + 1;
+			echo "Applying version {$target}...\n";
+			$migration->up();
+			setVersion($target);
+			$current = getVersion();
+			$migration = getMigration($current + 1);
+		}
+	} else {
+		if( !$flags['s'] ) echo "Migrating up from $current to $vers ...\n";
+		while($current < $vers) {
+			$target = $current + 1;
+			$migration = getMigration($target);
+			if( $migration === null ) {
+				echo "ERROR: Could not find migration for version {$target}\n";
+				exit(1);
+			}
+			echo "Applying version {$target}...\n";
+			$migration->up();
+			setVersion($target);
+			$current = getVersion();
+		}
+	}
+	if( !$flags['s'] ) echo "Done. Current version is $current\n";
+}
+
+function down($vers = null, $flags) {
+	if($vers !== null && !is_numeric($vers) ) {
+		echo "Cannot interpret version \"$vers\", must be a number\n";
+		return;
+	}
+	if( $vers < 0 ) {
+		echo "Must specify version >= 0\n";
+		return;
+	}
+	if( !isSetup() ) {
+		echo "Migration version tracking is not set up on this database yet.\n";
+		return;
+	}
+	
+	$current = getVersion();
+	if($vers === null) {
+		echo "Target version not specified, reverting just the last migration ($current)...\n";
+		$vers = $current - 1;
+	}
+	
+	if( $current > $vers ) { //this message only makes sense if so.
+		if( !$flags['s'] ) echo "Migrating down from $current to $vers...\n";
+	}
+	while($current > $vers && $current > 0) {
+		echo "Reverting version $vers...\n";
+		$migration = getMigration($current);
+		$migration->down();
+		setVersion($current - 1);
+		$current = getVersion();
+	}
+	
+	if( $flags['f'] ) {
+		echo "Forcing revert of version $vers...\n";
+		$migration = getMigration($vers);
+		$migration->down();
+		setVersion(max($current - 1,0));
+		$current = getVersion();
+	}
+	
+	if( !$flags['s'] ) echo "Done. Current version is $current\n";
+}
+
+function info($vers = null) {
+	if($vers !== null && !is_numeric($vers) ) {
+		echo "Cannot interpret version \"$vers\", must be a number\n";
+		return;
+	}
+	
+	if( !isSetup() ) {
+		echo "Migration version tracking is not set up on this database yet.\n";
+		return;
+	}
+	
+	if( $vers === null ) {
+		$current = getCurrent();
+		$vers = $current['version'];
+		echo "Database is currently at $vers, as of {$current['modified']}\n";
+	}
+	
+	while($vers > 0) {
+		$migration = getMigration($vers);
+		echo "Notes for version $vers: " . $migration->info()."\n";
+		$vers--;
+	}
+}
+
+//////////////////// HELPER FUNCTIONS //////////////
+
+function ensureInstalled() {
+	if( !tableExists() )
+		installVersionTracking();
+}
+
+function tableExists() {
+	$exists = Db::getValue("
+		select table_name
+		from information_schema.tables
+		where table_schema = '".Db::$db."' && table_name = 'database_version'
+	");
+	return $exists? true : false;
+}
+
+function isSetup() {
+	if( tableExists() )
+		return Db::getValue("
+			select version
+			from database_version
+		") >= 0;
+}
+
+function installVersionTracking() {
+	if( !tableExists() ) {
+		Db::query("
+			create table `database_version` (
+				version int(11) not null,
+				modified datetime not null
+			)
+		");
+	} else
+		Db::query('truncate `database_version`'); //make sure there's nothing in there
+	Db::executeInsert('database_version',array(
+		'version' => 0, 
+		'modified' => date('Y-m-d H:i:s')
+	));
+}
+
+function getVersion() {
+	if( !isSetup() )
+		return 0;
+	else
+		return Db::getValue("
+			select version
+			from database_version
+		");
+}
+
+function getCurrent() {
+	return Db::getRow("
+		select *
+		from database_version
+	");
+}
+
+function getMigration($version) {
+	$path = constant('MIGRATIONS_DIR')."/Migration$version.php";
+	//echo "Looking for '$path'\n";
+	if( file_exists($path) ) {
+		include_once $path;
+		$class = "Migration$version";
+		$migration = new $class();
+		if( !($migration instanceof Migration) )
+			$migration = new ProxyMigration($migration, $version); //make it fit our protocol
+		return $migration;
+	}
+	return null;
+}
+
+function setVersion($vers) {
+	Db::executeUpdate('database_version',array(
+		'version' => $vers, 
+		'modified' => date('Y-m-d H:i:s')
+	), "1=1");
+}
+
+/////////////// Parent classes /////////////
+
+class Migration {
+	protected $version;
+	
+	function __construct($version = null) {
+		if( $version !== null && is_numeric($version) ) {
+			$this->version = $version;
+		} else {
+			//Try to guess from class name
+			$name = get_class($this);
+			$name = substr($name,-strlen('Migration'));
+			if( $name && is_numeric($name) )
+				$this->version = $name;
+			else
+				$this->version = 0;
+		}
+	}
+	function up(){}
+	function down(){}
+	function info() {
+		return "n/a";
+	}
+}
+
+class ProxyMigration extends Migration {
+	private $delegate;
+	function __construct($delegate, $version) {
+		parent::__construct($version);
+		$this->delegate = $delegate;
+	}
+	function up() {
+		if( method_exists($this->delegate,'up') )
+			$this->delegate->up();
+		else {
+			echo "ERROR: This migration can't be applied";
+			exit(2);
+		}
+	}
+	function down() {
+		if( method_exists($this->delegate,'down') )
+			$this->delegate->down();
+		else {
+			echo "ERROR: This migration can't be un-applied";
+			exit(2);
+		}
+	}
+	function info() {
+		if( method_exists($this->delegate,'info') )
+			return $this->delegate->info();
+		else
+			return parent::info();
+	}
+}
+
+main($argv);
+?>

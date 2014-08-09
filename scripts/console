@@ -1,0 +1,151 @@
+#!/usr/bin/php
+<?php
+/**	(c) 2011-2014 Everett Morse
+ *	www.neptic.com
+ *	
+ *	Implement a REPL similar to Ruby on Rails's console, since PHP has no interactive shell to use.
+ */
+
+//Load the same environment as the web app
+define('ROOT_DIR',realpath(dirname(__FILE__) . '/..'));
+include_once ROOT_DIR.'/config/config.php';
+include_once ROOT_DIR.'/lib/engine/autoload.php';
+
+//Options
+if( in_array('-v',$argv) )
+	$VERBOSE = true;
+else
+	$VERBOSE = false;
+
+if( in_array('-d',$argv) )
+	$VAR_DUMP = true;
+else
+	$VAR_DUMP = false;
+
+$ENVI = 'development';
+if( in_array('-e',$argv) ) {
+	$i = array_search('-e',$argv);
+	$arg = trim($argv[$i + 1]);
+	if( !$arg || !in_array($arg, array('development','production','test')) ) {
+		echo "Invalid (or missing) environment parameter: $arg\n";
+		exit;
+	}
+	$ENVI = $arg;
+	if( $VERBOSE ) echo "Using $ENVI environment\n";
+	if( $VERBOSE ) echo "Note: at present environment makes no difference ...\n";
+}
+
+if( in_array('-h',$argv) ) {
+	echo "USAGE: ./script/console [options]\n\n";
+	echo "OPTIONS:\n";
+	echo "\t-v   -- Verbose. Prints some extra info about what is happening.\n";
+	echo "\t-d   -- Dump.  Use var_dump to print variables instead of the normal method.\n";
+	echo "\t-h   -- Help. Print this help message.\n";
+	echo "\t-e   -- Enviroment.  Specify 'development', 'production', or 'test'.\n";
+	echo "\nNote: this uses simple option parsing, so do '-v -d' and not '-vd'.\n\n";
+	echo "DESCRIPTION:\n";
+	echo "This provides a REPL environment similar to Ruby on Rails' 'rails console' mode.\n";
+	echo "PHP does not provide it's own interactive shell, so DispatchMVC ships with one.\n";
+	echo "This sets up the same config and autoloader environment available in DispatchMVC \n";
+	echo "web apps, so you can test code in a similar environment.\n\n";
+	echo "To make things easier, this will add 'return' to the front and ';' to the end of\n";
+	echo "expressions you type, except a few blacklisted ones like 'class' or 'echo'.\n\n";
+	exit;
+}
+
+//Restore readline history
+define('HISTORY_LEN',10);
+$historyPath = sys_get_temp_dir().'/dispatchmvc_console_history.txt';
+if( file_exists($historyPath) ) {
+	if($VERBOSE) echo "Loading history from $historyPath\n";
+	$history = explode("\n",file_get_contents($historyPath));
+	foreach($history as $line)
+		readline_add_history($line);
+} else
+	$history = array();
+
+function saveHistory() {
+	global $historyPath, $history;
+	file_put_contents($historyPath, implode("\n",$history));
+}
+function addHistory($line) {
+	global $history;
+	$history[] = $line;
+	if(count($history) > constant('HISTORY_LEN'))
+		array_shift($history);
+	saveHistory();
+}
+
+//To clean exit the loop
+$RUN_THE_LOOP = true;
+function quit() {
+	global $RUN_THE_LOOP;
+	$RUN_THE_LOOP = false;
+};
+
+//REPL
+do {
+	//READ
+	$line = readline('> ');
+	if( $line === false) {
+		echo "\n";
+		break; //pressed ctrl-D
+	}
+	//Multi-line input:
+	while( substr($line,-1) == '\\' ) {
+		$extra = readline('. ');
+		if( $extra === false ) {
+			echo "\n";
+			break; //breaks just the extra line part
+		}
+		$line = substr($line,0,-1) . ' ' . $extra;
+	}
+	
+	//Remember non-empty lines
+	if( trim($line) != '' ) {
+		readline_add_history($line);
+		addHistory($line); //save it to disk too
+	}
+	
+	$line = trim($line);
+	if( $line != '' ) {
+		//Wrap the line, except for blacklisted starting words
+		$blacklist = array('echo', 'return', 'class', 'if', 'for', 'foreach');
+		$wrap = true;
+		foreach($blacklist as $check) {
+			if( $check == substr($line, 0, strlen($check)) ) {
+				$wrap = false;
+				break;
+			}
+		}
+		
+		if( $wrap )
+			$line = "return $line;";
+		else
+			$line = "$line;";
+		
+		//EVAL
+		$val = eval($line);
+		
+		//PRINT
+		if( $val !== null ) {
+			if( $VAR_DUMP ) {
+				var_dump($val);
+			} else {
+				if( $val === true )
+					echo "==> #true\n";
+				else if( $val === false )
+					echo "==> #false\n";
+				else if( is_string($val) )
+					echo "==> \"$val\"\n";
+				else if( !is_object($val) || method_exists($val, '__toString') )
+					echo "==> $val\n";
+				else
+					echo "==> object (".get_class($val).")\n";
+			}
+		}
+	}
+} while($RUN_THE_LOOP); //LOOP
+
+if($VERBOSE) echo "Exited loop cleanly. Goodbye!\n";
+?>

@@ -1,0 +1,32 @@
+#! /bin/bash
+config=$1
+if [ "$config" = "" ]; then
+	config="local"
+fi
+
+toself=$(dirname $0)
+phpconfIn="$toself/../config/config.$config.php"
+phpconfOut="$toself/../config/config.php"
+jsconfIn="$toself/../config/config.$config.js"
+jsconfOut="$toself/../config/config.js"
+
+if [ ! -f "$jsconfIn" ]; then
+	echo "Cannot find Node.js config file for $config"
+	exit 1
+fi
+
+if [ ! -f "$phpconfIn" ]; then
+	echo "Cannot find PHP config file for $config"
+	exit 1
+fi
+
+echo "Swithcing to config: $config (this will overwrite anything in current config files)"
+cp -f "$jsconfIn" "$jsconfOut"
+cp -f "$phpconfIn" "$phpconfOut"
+
+# Maybe have .htaccess file to use too
+htaccessIn="$toself/../config/htaccess.$config.conf"
+if [ -f "$htaccessIn" ]; then
+	cp -f "$htaccessIn" "$toself/../.htaccess"
+fi
+

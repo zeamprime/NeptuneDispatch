@@ -1,0 +1,98 @@
+#!/usr/bin/php
+<?php
+/**	
+ * @author Evertt Morse
+ * @copyright (c) 2014 Everett Morse
+ * www.neptic.com
+ * 
+ * Create initial records in database to allow basic use.
+ * 
+ * --- THIS IS JUST AN EXAMPLE VERSION FOR YOU ---
+ * It includes the database and autoloader so you can use all your model classes like normal.
+ * 
+ */
+define('MIGRATIONS_DIR',dirname(__FILE__).'/../app/migrations');
+define('VERSION','1.0');
+include_once dirname(__FILE__).'/../lib/engine/autoload.php';
+require_once dirname(__FILE__).'/../config/config.php'; //for database
+
+
+/**
+ * Main entry point
+ */
+function main($args) {
+	createApps();
+	createUserAndGroup();
+}
+
+function createApps() {
+	if( !App::exists(1) ) {
+		echo "Creating Test/Super app.\n";
+		Db::query("insert into apps (id,name) values (1,'Test')");
+		$app = App::find(1);
+		$app->generateKey();
+		$app->save();
+		echo "{$app->id}: {$app->name}, key={$app->api_key}\n";
+	}
+	if( !App::exists(2) ) {
+		echo "Creating Web Client app.\n";
+		Db::query("insert into apps (id,name) values (2,'Web Client')");
+		$app = App::find(2);
+		$app->generateKey();
+		$app->save();
+		echo "{$app->id}: {$app->name}, key={$app->api_key}\n";
+	}
+	if( !App::exists(3) ) {
+		echo "Creating iOS Client app.\n";
+		Db::query("insert into apps (id,name) values (3,'iOS Client')");
+		$app = App::find(3);
+		$app->generateKey();
+		$app->save();
+		echo "{$app->id}: {$app->name}, key={$app->api_key}\n";
+	}
+}
+
+function createUserAndGroup() {
+	$count = Db::getValue("select count(*) from users");
+	if( $count > 0 ) {
+		if( $count == 1 )
+			echo "There is already $count user.\n";
+		else
+			echo "There are already $count users.\n";
+		return;
+	}
+	
+	echo "Creating user ... ";
+	$user = new User();
+	$user->name = 'Everett';
+	$user->joinedNow();
+	$user->setPassword("complicatedPASSWORD");
+	$user->save();
+	echo " ID: {$user->id}, name={$user->name}\n";
+	
+	$ident = new UserIdentity();
+	$ident->service = 'EMAIL';
+	$ident->username = 'Everett';
+	$ident->user_id = $user->id;
+	$ident->save();
+	echo "Created identity with username {$ident->username}\n";
+	
+	$group = new Group;
+	$group->name = "Testers";
+	$group->save();
+	echo "Created group {$group->name}\n";
+	
+	$privs = new UserPrivilege();
+	$privs->group_id = $group->id;
+	$privs->user_id = $user->id;
+	$privs->add('G:SuperAdmin');
+	$privs->save();
+	echo "Made the user SuperAdmin in it.\n";
+	
+	$group->addMember($user->id);
+	echo "Added the user as a member.\n";
+}
+
+////////////////////////////
+main($argv);
+?>

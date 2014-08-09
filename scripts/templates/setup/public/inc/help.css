@@ -1,0 +1,25 @@
+body { margin: 20px; background-color: #ffe; }
+table { 
+	border: solid 1px #ccc;
+	box-shadow: 3px 3px 5px #ddd;
+	border-spacing: 0px;
+	border-radius: 4px 4px 0px 0px;
+}
+table tr td { 
+	/*border-top: solid 1px #ddd;
+	border-left: solid 1px #ddd;*/
+	padding: 4px;
+	box-shadow: 2px 2px 2px #ddd inset;
+}
+table tr th { 
+	background-color: #ccd;
+	padding: 4px;
+	text-shadow: #eef 1px 1px;
+	border-bottom: solid 1px #aaa;
+}
+pre { 
+	background-color: #eee;
+	padding: 10px;
+	border-radius: 5px;
+	overflow: auto;
+}

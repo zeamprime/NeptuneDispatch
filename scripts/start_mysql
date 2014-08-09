@@ -1,0 +1,25 @@
+##
+# Find MySQL, installed via Homebrew, and launch it.
+# It comes with a lauchd plist to load. But newer versions name this differently.
+# Also, on Intrepid I want to use the old MySQL since the db hasn't been migrated
+# to the newer MySQL folder installed.
+##
+
+# Prefer 5.5.15, otherwise ask Brew for latest.
+INSTALL_DIR=/usr/local/Cellar/mysql/5.5.15/
+if [ ! -e $INSTALL_DIR ]; then
+	INSTALL_DIR=$(brew --prefix mysql)
+fi
+cd $INSTALL_DIR
+
+
+
+PLIST=~/Library/LaunchAgents/homebrew.mxcl.mysql.plist
+if [ ! -e $PLIST ]; then
+	PLIST=com.mysql.mysqld.plist 
+fi
+if [ ! -e $PLIST ]; then
+	PLIST=homebrew.mxcl.mysql.plist
+fi
+launchctl load $PLIST
+

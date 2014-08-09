@@ -1,0 +1,257 @@
+<html>
+<head>
+	<title>MyProject - API Test</title>
+	<script type='text/javascript' src='js/jquery.js'></script>
+	<script type='text/javascript' src='js/jquery.cookie.js'></script>
+	<script type='text/javascript' src='js/underscore.js'></script>
+	<script type='text/javascript' src='js/date.js'></script>
+	<!--script type="text/javascript" src="http://crypto-js.googlecode.com/files/2.0.0-crypto-sha1.js"></script>
+	<script type="text/javascript" src="http://crypto-js.googlecode.com/files/2.0.0-hmac-min.js"></script-->
+	<!--script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/hmac-sha1.js"></script-->
+	<script type='text/javascript' src="js/sha1.js"></script>
+	
+	<style type='text/css'>
+		label { display: block; float: left; width: 5em; }
+		input,textarea,select { float: left; }
+		div { overflow: auto; }
+		body { background-color: #003; color: #ffd; text-shadow: #eec 1px 1px 5px; }
+		#request-container { 
+			background-color: #ccf; padding: 4px; color: #003; 
+			border-radius: 4px 4px 0px 0px;
+		}
+		#response-container {
+			background-color: #cfc; padding: 4px; color: #003; 
+			border-radius: 0px 0px 4px 4px;
+		}
+		textarea { background-color: #ffe; font-family: Monoco, Courier New, fixed; }
+	</style>
+	
+</head>
+<body>
+	
+	<h1>REST API Test Interface</h1>
+	
+	<div id='request-container'>
+		<form id='request-form'>
+		<div>
+			<label for='method'>Method</label>
+			<select id='method'>
+				<option>GET</option>
+				<option>POST</option>
+				<option>PUT</option>
+				<option>DELETE</option>
+			</select>
+		
+			<input type='text' id='url' size='120'/>
+			
+			<input type='submit' id='go' value='Go' />
+		</div>
+		<div>
+			<label for='accepts'>Accepts:</label>
+			<select id='accepts'>
+				<option>application/json</option>
+				<option>text/html</option>
+				<option>application/xml</option>
+				<option>text/markdown</option>
+			</select>
+			
+			<label for='appId' style='padding-left: 20px; width: 3em;'>App:</label>
+			<input type='text' id='appId' size='48'/>
+			<input type='checkbox' id='useHMAC' value='hmac'/>
+		</div>
+		<div>
+			<label for='userId'>User:</label>
+			<input type='text' id='userId' size='5'/>
+			
+			<label for='tokenId' style='padding-left: 20px;'>Token ID:</label>
+			<input type='text' id='tokenId' size='5'/>
+			
+			<label for='token' style='padding-left: 20px;'>Token:</label>
+			<input type='text' id='token' size='48'/>
+		</div>
+		
+		<label for='request_body'>Request</label>
+		<textarea id='request_body' rows='30' cols='120' style='width: 90%'></textarea>
+		</form>
+	</div>
+	<div id='response-container' style='position: relative'>
+		<label for='request_body'>Response</label>
+		<textarea id='response_body' rows='30' cols='120' style='width: 90%'></textarea>
+		
+		<div style='overflow: auto; position: absolute; left: 0px; top: 2em;'>
+			<input type='checkbox' id='pretty' />
+			<label for='pretty'>Format</label>
+		</div>
+	</div>
+	
+	<script type='text/javascript'>
+		
+		$(function() {
+			//Connect event handlers
+			$('#go').click(doApiRequest);
+			$('#request-form').submit(doApiRequest);
+			$('#pretty').click(updateFormat);
+			
+			loadValues();
+		});
+		
+		function doApiRequest() {
+			saveValues();
+			var method = $('#method').val();
+			
+			var data = null;
+			if( method == 'PUT' || method == 'POST' )
+				data = $('#request_body').val();
+			
+			//jQuery can't handle anything but GET and POST? -- wait, something else is
+			// going on ...
+			var processData = false;
+			var sendData = data;
+			/*if( method == 'PUT' ) {
+				//data['_method'] = method;
+				sendData = {'_data': JSON.stringify(data), '_method': method};
+				method = 'POST';
+				processData = true;
+			} else if( method == 'DELETE' ) {
+				sendData = {"_method": method};
+				method = 'POST';
+				processData = true;
+			}//*/
+			
+			var headers = {'Accept':$('#accepts').val()};
+			
+			var userId = $('#userId').val(),
+			    tokenId = $('#tokenId').val(),
+			    token = $('#token').val();
+			if( userId.length > 0 ) {
+				if( token.length < 1 ) {
+					alert("Missing user token!");
+					return;
+				}
+				
+				if( $('#useHMAC').prop('checked') )
+					headers['X-USER-KEY'] = ""+userId+":"+tokenId;
+				else
+					headers['X-USER-KEY'] = ""+userId+":"+token;
+			} else
+				userId = "";
+			
+			var appKey = $('#appId').val();
+			if( appKey.length > 0 ) {
+				if( $('#useHMAC').prop('checked') ) {
+					appKey = appKey.split(':');
+					if( appKey[0].length == 0 || appKey[1].length < 24 )
+						alert("Malformed API Key");
+					
+					headers['X-APP-ID'] = appKey[0];
+					
+					var now = new Date();
+					var time = now.toString('yyyy-MM-dd HH:mm:ss');
+					tz = now.toString().match(/.*\(([A-Z]{3})\).*/)[1];
+					time += " " + tz;
+					
+					var url = $('#url').val().split('?');
+					var query = url[1] === undefined? "" : url[1];
+					url = url[0];
+					var text = encodeURI(url+query)+time+appKey[0]+userId+(data !== null? data : "");
+					//var hash = Crypto.HMAC(Crypto.SHA1, text, appKey[1], {asString: true})
+					//var hash = CryptoJS.HmacSHA1(text, appKey[1]);
+					
+					var shaObj = new jsSHA(text, "TEXT");
+					var key = appKey[1];
+					if( userId != "" )
+						key += token;
+					var hash = shaObj.getHMAC(key, "TEXT", "SHA-1", "B64");
+					console.log(text);
+					console.log(key);
+					console.log(hash);
+					
+					headers['X-HASH-TIME'] = time;
+					headers['X-HASH'] = hash;
+				} else {
+					headers['X-APP-ID'] = appKey;
+				}
+			}
+			
+			$.ajax($('#url').val(), {
+				//'accepts': $('#accepts').val(),
+				'headers': headers,
+				'type': method,
+				'processData': processData,
+				'data': sendData,
+				//'contentType': 'application/json',
+				
+				'success': function(data, status, xhr) {
+					console.log(data);
+					$('#response_body').val(formatJSON(xhr.responseText));
+				},
+				'error': function(xhr, status, err) {
+					var msg = "HTTP ERROR: "+xhr.status+" "+err;
+					var text = xhr.responseText;
+					if(text != null && text != "")
+						msg += "\n-----------------------\n" + formatJSON(text);
+					$('#response_body').val(msg);
+				}
+			});
+			
+			//End with convenient field selected
+			$('#url').focus();
+			
+			return false;
+		}
+		
+		function updateFormat() {
+			$('#response_body').val(formatJSON($('#response_body').val()));
+		}
+		
+		function formatJSON(text) {
+			if( $('#pretty').prop('checked') ) {
+				try {
+					var data = JSON.parse(text);
+					return JSON.stringify(data, undefined, 2);
+				} catch(e) {}
+			}
+			return text;
+		}
+		
+		function loadValues() {
+			var method = $.cookie('apitest-method');
+			if( method === undefined || method == "" )
+				method = "GET";
+			$('#method').val(method);
+			var accepts = $.cookie('apitest-accepts');
+			if( accepts === undefined || accepts == "" )
+				accepts = "application/json";
+			$('#accepts').val(accepts);
+			var url = $.cookie('apitest-url');
+			if( url != null && url != '' )
+				$('#url').val(url);
+			else 
+				$('#url').val(window.location.protocol+"//"+window.location.hostname+"/");
+			$('#request_body').val($.cookie('apitest-request'));
+			$('#appId').val($.cookie('apitest-appId'));
+			$('#useHMAC').prop('checked',$.cookie('apitest-useHMAC')? true : false);
+			$('#userId').val($.cookie('apitest-userId'));
+			$('#tokenId').val($.cookie('apitest-tokenId'));
+			$('#token').val($.cookie('apitest-token'));
+			$('#pretty').prop('checked',$.cookie('apitest-pretty')? true : false);
+		}
+		
+		function saveValues() {
+			$.cookie('apitest-method',$('#method').val());
+			$.cookie('apitest-accepts',$('#accepts').val());
+			$.cookie('apitest-url',$('#url').val());
+			$.cookie('apitest-request',$('#request_body').val());
+			$.cookie('apitest-appId',$('#appId').val());
+			$.cookie('apitest-useHMAC',$('#useHMAC').prop('checked'));
+			$.cookie('apitest-userId',$('#userId').val());
+			$.cookie('apitest-tokenId',$('#tokenId').val());
+			$.cookie('apitest-token',$('#token').val());
+			$.cookie('apitest-pretty',$('#pretty').prop('checked'));
+		}
+		
+		
+	</script>
+		
+</body>
+</html>

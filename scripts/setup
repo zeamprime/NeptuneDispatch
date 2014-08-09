@@ -1,0 +1,22 @@
+#!/usr/bin/php
+<?php
+/**	
+ * @author Everett Morse
+ * @copyright (c) 2014 Everett Morse
+ * www.neptic.com
+ *	
+ * Setup project directory structure, including scripts dir with symlinks to engine's scripts.
+ * Copies in various templates as a starting point.
+ */
+
+
+/**
+ * Entry point.
+ */
+function main() {
+	
+}
+
+
+main();
+?>

@@ -1,0 +1,319 @@
+#!/usr/bin/php
+<?php
+/**	(c) 2011 Everett Morse
+ *	www.neptic.com
+ *
+ *	Simple code generator that uses some built-in formulae with template files.
+ */
+include_once dirname(__FILE__).'/../lib/engine/autoload.php';
+
+
+//Config
+$VERBS = array('help','controller','migration','model', 'view', 'layout', 'api');
+$FLAGS = array(
+	'api' => array(
+		'g' => array(false, "Generate help files (vs. dynamically when requested)")
+	)
+);
+
+//Stash options extracted from the args here
+$opts = array(
+	'edit' => false
+);
+
+function main($args) {
+	global $opts,$VERBS,$FLAGS;
+	
+	//First, scan for global options
+	$i = array_search('-e', $args);
+	if( $i !== false ) {
+		$opts['edit'] = true;
+		array_splice($args, $i, 1);
+	}
+	if( array_search('-h', $args) !== false ) {
+		help();
+		exit;
+	}
+	
+	$verb = $args[1];
+	if( !in_array($verb, $VERBS) ) {
+		help();
+		exit;
+	}
+	
+	$i = 2;
+	$flags = array();
+	while( substr($args[$i],0,1) == '-' ) {
+		$flagstr = $args[$i];
+		for($j = 1; $j < strlen($flagstr); $j++) {
+			$flag = substr($flagstr,$j,1);
+			if( !isset($FLAGS[$verb][$flag]) ) {
+				echo "ERROR: Unrecognized flag: '$flag'\n\n";
+				help($verb);
+				exit;
+			}
+			if( $FLAGS[$verb][$flag][0] ) { //has a param
+				$flags[$flag] = $args[++$i];
+			} else {
+				$flags[$flag] = true;
+			}
+		}
+		$i++;
+	}
+	
+	$verb($args[2], $flags);
+}
+
+//////////// ACTIONS /////////////////////
+
+function help($verb = null) {
+	global $FLAGS;
+	switch($verb) {
+		case 'controller':
+			echo "Generates a controller of the specified name using the template.\n";
+			break;
+		case 'migration':
+			echo "Generates a migration with the next available number using the template.\n";
+			echo "Optionally pass a name for a new table.\n";
+			break;
+		case 'model':
+			echo "Generates a model of the specified name using the template.\n";
+			break;
+		case 'view':
+			echo "Generates a view of the specified name using the template.\n";
+			echo "The name should be a path, like 'welcome/index', and not contain '.php'.\n";
+			break;
+		case 'layout':
+			echo "Generates a layout of the specified name using the template.\n";
+			echo "The layout will be placed in app/views/layouts/ with the '.php' suffix added.\n";
+			break;
+		case 'api':
+			echo "Generate a REST API model controller. Specify model name.\n";
+			break;
+		default:
+			
+			echo "USAGE: ./script/generate <type> [flags] <name>\n\n";
+			echo "    or ./script/generate help [type]\n";
+			echo "Available types:\n";
+			echo "\tcontroller\n";
+			echo "\tmodel\n";
+			echo "\tmigration\n";
+			echo "\tview\n";
+			echo "\tlayout\n";
+			echo "\tapi\n";
+			echo "\nGlobal Flags:\n";
+			echo "\t-h -- Synonymn for 'help' verb\n";
+			echo "\t-e -- Open in TextWrangler when done\n";
+			break;
+	}
+	if( isset($FLAGS[$verb]) ) {
+		echo "\nFlags:\n";
+		foreach($FLAGS[$verb] as $flag => $info) {
+			list($hasParam,$desc) = $info;
+			if( $hasParam )
+				echo "-$flag <value> -- $desc\n";
+			else
+				echo "-$flag -- $desc\n";
+		}
+	}
+	echo "\n";
+}
+
+function controller($name) {
+	$name = trim($name);
+	if( !$name ) {
+		echo "Missing name!\n\n";
+		help('controller');
+		return;
+	}
+	
+	$classForm = Util::camelizeClass($name); //might have been given as underscores
+	$fileForm = Util::underscore($classForm);
+	$values = array(
+		'Name' => $classForm,
+		'name' => $fileForm
+	);
+	generateFile('controllers/'.$fileForm.'.php', 'Controller', $values);
+}
+
+function migration($table) {
+	$dir = dirname(__FILE__).'/../app/migrations';
+	$files = scandir($dir);
+	$max = 0;
+	foreach($files as $file) {
+		if( substr($file,0,9) == 'Migration' ) {
+			$vers = preg_replace('/[^0-9]/','',$file);
+			if( $vers > $max )
+				$max = $vers;
+		}
+	}
+	$version = $max + 1;
+	
+	$table = trim($table);
+	$values = array(
+		'version' => $version,
+		'table' => $table? $table : 'test'
+	);
+	generateFile('migrations/Migration'.$version.'.php', 'Migration', $values);
+}
+
+function model($name) {
+	$name = trim($name);
+	if( !$name ) {
+		echo "Missing name!\n\n";
+		help('model');
+		return;
+	}
+	
+	$classForm = Util::camelizeClass($name); //might have been given as underscores
+	$fileForm = Util::underscore($classForm);
+	$values = array(
+		'Name' => $classForm,
+		'name' => $fileForm
+	);
+	generateFile('models/'.$fileForm.'.php', 'Model', $values);
+}
+
+function view($name) {
+	$name = trim($name);
+	if( !$name ) {
+		echo "Missing name!\n\n";
+		help('view');
+		return;
+	}
+	
+	if( dirname($name) )
+		$name = dirname($name).'/'.Util::underscore(basename($name));
+	else
+		$name = Util::underscore($name);
+	
+	$values = array(
+		'name' => $name
+	);
+	generateFile('views/'.$name.'.php', 'View', $values);
+}
+
+function layout($name) {
+	$name = trim($name);
+	if( !$name ) {
+		echo "Missing name!\n\n";
+		help('layout');
+		return;
+	}
+	
+	if( dirname($name) )
+		$name = dirname($name).'/'.Util::underscore(basename($name));
+	else
+		$name = Util::underscore($name);
+	
+	$values = array(
+		'name' => $name
+	);
+	generateFile('views/layouts/'.$name.'.php', 'Layout', $values);
+}
+
+function api($name, $flags) {
+	$name = trim($name);
+	if( !$name ) {
+		echo "Missing name!\n\n";
+		help('api');
+		return;
+	}
+	
+	$classForm = Util::camelizeClass($name); //might have been given as underscores
+	$fileForm = Util::underscore($classForm);
+	$values = array(
+		'Name' => $classForm,
+		'name' => $fileForm,
+		'names' => Util::plural($fileForm),
+		'Names' => Util::plural($classForm)
+	);
+	generateFile('api/'.$fileForm.'.php', 'RestModel', $values);
+	
+	if( $flags['g'] ) {
+		//Now generate documentation for the standard methods.
+		$values['METHOD'] = 'GET'; $values['OpName'] = 'Index';
+		generateFile('api/help/'.$fileForm.'-index.md', 'RestHelp.md', $values);
+	
+		$values['METHOD'] = 'GET'; $values['OpName'] = 'Fetch';
+		generateFile('api/help/'.$fileForm.'-fetch.md', 'RestHelp.md', $values);
+	
+		$values['METHOD'] = 'POST'; $values['OpName'] = 'Create';
+		generateFile('api/help/'.$fileForm.'-create.md', 'RestHelp.md', $values);
+	
+		$values['METHOD'] = 'PUT'; $values['OpName'] = 'Update';
+		generateFile('api/help/'.$fileForm.'-update.md', 'RestHelp.md', $values);
+	
+		$values['METHOD'] = 'DELETE'; $values['OpName'] = 'Delete';
+		generateFile('api/help/'.$fileForm.'-delete.md', 'RestHelp.md', $values);
+	}
+}
+
+//////////// HELPER FUNCTIONS //////////////
+
+
+function readTemplate($name) {
+	$path = dirname(__FILE__).'/templates/'.$name.'.php';
+	if( file_exists($path) ) {
+		return file_get_contents($path);
+	} else
+		return false;
+}
+
+function replaceTemplates($file, $templates) {
+	foreach($templates as $name => $value) {
+		$file = str_replace("{%$name%}",$value,$file);
+	}
+	return $file;
+}
+
+function generateFile($relative_path, $template, $values) {
+	global $opts;
+	
+	$path = dirname(__FILE__).'/../app/'.$relative_path;
+	
+	$real = realpath($path);
+	if( $real === false )
+		$path = regex_realpath($path);
+	else
+		$path = $real;
+	
+	if( file_exists($path) ) {
+		echo "ERROR: file already exists at $path\n";
+		return;
+	}
+	
+	$tpl = readTemplate($template);
+	if( $tpl !== false ) {
+		$tpl = replaceTemplates($tpl,$values);
+	} else
+		$tpl = "";
+	
+	ensure_dir(dirname($path));
+	echo "Creating file $path\n";
+	file_put_contents($path,$tpl);
+	
+	if( $opts['edit'] )
+		`edit $path`; //open using TextWrangler / BBEdit command
+}
+
+//Uses regex to remove ../ from paths. Works in case realpath returns false.
+function regex_realpath($path) {
+	//From "spam at klickagent dot ch" @ http://www.php.net/manual/en/function.realpath.php
+	$pattern = '/\w+\/\.\.\//';
+	while(preg_match($pattern,$path)){
+		$path = preg_replace($pattern, '', $path);
+	}
+	return $path;
+}
+
+function ensure_dir($path) {
+	if( $path && !file_exists($path) ) {
+		echo "Creating directories for $path\n";
+		`mkdir -p $path`;
+	}
+}
+
+
+main($argv);
+?>

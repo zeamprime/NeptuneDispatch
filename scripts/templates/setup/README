@@ -1,0 +1,33 @@
+# README
+
+Welcome to Neptune Dispatcher. I hope you enjoy it.
+
+
+## Getting Started
+
+The engine repo lives in lib/engine/. Everything else is your project. Note that some of the engine scripts are symlinked into scripts/ for convenience.
+
+Use config/config.example.php as a starting point. Copy this file for each location you run this site. (Do not check into source control since you put passwords here.) Use ./scripts/select_config <sitename> to easily switch between local development and deployment server.
+
+Most of your project lives in app/ under controllers, models, views, etc. It is very similar to Ruby on Rails and should be familiar to most web developers.  Note that the parent class for all controllers lives in lib/AppController.php. This is a template that you can change and own.
+
+You can use ./scripts/generate to get started with example models, controllers, and migrations. Use ./scripts/migrate <up/down> and ./scripts/seed (after editing it, the seed is an example too) to set up your database. Use ./scripts/console to test out your model classes or do quick PHP experiments in the application's PHP environment (similar to Ruby on Rail's console).
+
+
+## Contributors
+
+This PHP dispatch / front controller / REST API stack software was written by Everett Morse. It was built up from a simple single-file front controller and a database utility class over the course of several years and projects.
+
+This software is not guaranteed to work for any specific purpose and comes with no warrantee whatsoever. USE AT YOUR OWN RISK.
+
+### Authors
+
+Everett Morse, 2009-2014
+
+### Included 3rd-Party Software
+
+PHP Markdown
+Copyright (c) 2004-2013 Michel Fortin  
+<http://michelf.com/projects/php-markdown/>
+
+Several algorithms and utility functions are paraphrased from or inspired by Stack Overflow answers.  When any answer was copied the specific SO answer is referenced in comments.
