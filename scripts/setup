@@ -17,7 +17,7 @@ function main() {
 	if( !isInProjectDir() ) {
 		echo "You should create a project directory with the engine code located in lib/engine/" .
 				PHP_EOL;
-		exit 1;
+		exit(1);
 	}
 	
 	createDirs();
@@ -58,11 +58,11 @@ function createDirs() {
 }
 
 function mkdirLog($dir) {
-	if( mkdirLog($dir) ) {
+	if( mkdir($dir) ) {
 		echo "Created: $dir" . PHP_EOL;
 	} else {
 		echo "ERROR: failed to make directory \"{$dir}\"" . PHP_EOL;
-		exit 1;
+		exit(1);
 	}
 }
 
@@ -73,7 +73,7 @@ function linkScripts() {
 	$scripts = scandir($scriptPath);
 	foreach($scripts as $script) {
 		if( !is_dir($scriptPath.$script) && is_executable($scriptPath.$script) ) {
-			`ln -s "{$scriptPath}$script" "$script"`
+			`ln -s "{$scriptPath}$script" "$script"`;
 		}
 	}
 	chdir("..");
@@ -86,7 +86,7 @@ function installIndex() {
 
 function copyTemplates() {
 	$tplDir = "lib/engine/scripts/templates/setup";
-	copyTpls($tplDir,"./")
+	copyTpls($tplDir,"./");
 }
 
 function copyTpls($from, $to) {
