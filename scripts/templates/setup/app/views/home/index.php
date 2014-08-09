@@ -3,8 +3,14 @@
 		<div class='col-md-12' id='center-banner'>
 			
 			<br/><br/><br/>
+			<h1>Welcome to Neptune Dispatch</h1>
 			<p>
-			Hello, this is my <i>shiny</i>, <b>new</b> project
+				Hello. This is my <i>shiny</i>, <b>new</b> project.
+			</p>
+			<p>
+				You can edit this file in:
+					<pre>app/views/home/index.php</pre>
+				Check out the README.
 			</p>
 			<br/><br/><br/>
 			

@@ -9,6 +9,7 @@
  * Copies in various templates as a starting point.
  */
 
+require_once "Colors.class";
 
 /**
  * Entry point.
@@ -34,7 +35,7 @@ function main() {
 	echo " - Create project GIT/SVN repo." . PHP_EOL;
 	echo " - Edit config/htaccess.example.php to point to your project directory." . PHP_EOL;
 	echo " - Edit config/config.example.php (and rename)" . PHP_EOL;
-	echo " - Run ./scripts/select_config example" . PHP_EOL;
+	echo Colors::str(" - Run ./scripts/select_config example", 'purple', 'black') . PHP_EOL;
 	echo " - Build stuff!" . PHP_EOL;
 	echo PHP_EOL;
 }
@@ -44,6 +45,7 @@ function isInProjectDir() {
 }
 
 function createDirs() {
+	echo Colors::str("Creating directory structure ...", 'blue') . PHP_EOL;
 	mkdirLog("app");
 	mkdirLog("app/api");
 	mkdirLog("app/controllers");
@@ -52,7 +54,7 @@ function createDirs() {
 	mkdirLog("app/views");
 	mkdirLog("app/views/layouts");
 	mkdirLog("cache");
-	`chmod 666 cache` #this makes it much easier, but you should restrict to your web user.
+	`chmod 666 cache`; #this makes it much easier, but you should restrict to your web user.
 	mkdirLog("config");
 	mkdirLog("public");
 	mkdirLog("scripts");
@@ -62,15 +64,15 @@ function createDirs() {
 
 function mkdirLog($dir) {
 	if( mkdir($dir) ) {
-		echo "Created: $dir" . PHP_EOL;
+		echo Colors::str("Created","green") . ": $dir" . PHP_EOL;
 	} else {
-		echo "ERROR: failed to make directory \"{$dir}\"" . PHP_EOL;
+		echo Colors::str("ERROR","red") . ": failed to make directory \"{$dir}\"" . PHP_EOL;
 		exit(1);
 	}
 }
 
 function linkScripts() {
-	echo "Linking scripts ..." . PHP_EOL;
+	echo Colors::str("Linking scripts ...",'blue') . PHP_EOL;
 	chdir("scripts");
 	$scriptPath = "../lib/engine/scripts/";
 	$scripts = scandir($scriptPath);
@@ -83,13 +85,33 @@ function linkScripts() {
 }
 
 function installIndex() {
-	echo "Installing index.php ..." . PHP_EOL;
+	echo Colors::str("Installing index.php ...",'blue') . PHP_EOL;
 	`cp lib/engine/index.php index.php`;
 }
 
 function copyTemplates() {
+	echo Colors::str("Copying example starting point ...",'blue') . PHP_EOL;
 	$tplDir = "lib/engine/scripts/templates/setup/";
 	copyTpls($tplDir,"./");
+	
+	//While we're at it, let's fix the htaccess example
+	$htaccess = "config/htaccess.example.conf";
+	$currentDir = basename(trim(`pwd`));
+	if( file_exists($htaccess) ) {
+		file_put_contents($htaccess, 
+			str_replace("myproject",$currentDir,
+				file_get_contents($htaccess)));
+	}
+	//And API Test title
+	$file = "public/apitest.html";
+	if( file_exists($file) ) {
+		$title = ucwords(
+			str_replace("-"," ",
+				str_replace("_"," ",$currentDir)));
+		file_put_contents($file, 
+			str_replace("MyProject",$title,
+				file_get_contents($file)));
+	}
 }
 
 function copyTpls($from, $to) {
@@ -101,7 +123,8 @@ function copyTpls($from, $to) {
 			if( is_dir($to.$tpl) || mkdir($to.$tpl) ) {
 				copyTpls($from.$tpl.'/', $to.$tpl.'/');
 			} else {
-				echo "ERROR: Failed to make dir for templates at \"$to$tpl\"" . PHP_EOL;
+				echo Colors::str("ERROR","red") .": Failed to make dir for templates at \"$to$tpl\""
+					 	. PHP_EOL;
 			}
 		} else {
 			//echo "cp \"$from$tpl\" \"$to$tpl\"" . PHP_EOL;

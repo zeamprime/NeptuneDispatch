@@ -312,6 +312,14 @@ class RestHelp extends RestModel
 		$mdpath = ROOT_DIR.'/app/api/help/home.md';
 		if( file_exists($mdpath) ) {
 			$help = file_get_contents($mdpath);
+			
+			//Some simple templating
+			$metadata = array(
+				'BASEURL' => Page::absPath("/"),
+				'HELPURL' => Page::absPath("/help")
+			);
+			$help = $this->replaceTemplates($help, $metadata);
+			
 			if( $this->format == 'html' ) {
 				include_once MARKDOWN_LIB;
 				include_once MARKDOWN_EXTRA_LIB;

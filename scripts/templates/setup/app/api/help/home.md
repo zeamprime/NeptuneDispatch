@@ -32,8 +32,8 @@ A `User` is ...
 
 ## Testing
 
-You can use the web client at [`../apitest.html`](../apitest.html) if you have an App key. Check out the
-Javascript library at [`../js/api.js`](../js/api.js) as well. It depends on 
+You can use the web client at [`{%BASEURL%}apitest.html`]({%BASEURL%}apitest.html) if you have an App key. Check out the
+Javascript library at [`{%BASEURL%}js/api.js`]({%BASEURL%}js/api.js) as well. It depends on 
 [jQuery](http://www.jquery.com),
 [jQuery.storageapi](https://github.com/julien-maurel/jQuery-Storage-API),
 [underscore.js](http://underscorejs.org),
