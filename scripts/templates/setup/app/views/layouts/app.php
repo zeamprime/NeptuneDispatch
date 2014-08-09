@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title><?= isset($data['title'])? $data['title'] : "Lunch" ?></title>
+		<title><?= isset($data['title'])? $data['title'] : "MyProject" ?></title>
 		<link rel='stylesheet' type='text/css' href='<?=Page::absPath('/')?>inc/bootstrap.min.css' />
 		<? if( isset($data['style']) ) {?>
 		<link rel='stylesheet' type='text/css' href='<?=Page::absPath('/')?>inc/<?=$data['style']?>.css' />

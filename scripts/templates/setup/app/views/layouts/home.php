@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title><?= isset($data['title'])? $data['title'] : "Lunch" ?></title>
+		<title><?= isset($data['title'])? $data['title'] : "MyProject" ?></title>
 		<link rel='stylesheet' type='text/css' href='inc/bootstrap.min.css' />
 		<?
 		if( count($data['scripts']) > 0 ) {
