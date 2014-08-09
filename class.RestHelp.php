@@ -12,8 +12,8 @@
  * The output format is either Markdown or HTML. Both will be cached to avoid constant generation.
  */
 
-define('MARKDOWN_LIB',"/lib/engine/vendor/Michelf/Markdown.php")
-define('MARKDOWN_EXTRA_LIB',"/lib/engine/vendor/Michelf/MarkdownExtra.php")
+define('MARKDOWN_LIB',ROOT_DIR."/lib/engine/vendor/Michelf/Markdown.php");
+define('MARKDOWN_EXTRA_LIB',ROOT_DIR."/lib/engine/vendor/Michelf/MarkdownExtra.php");
 
 class RestHelp extends RestModel
 {
@@ -112,8 +112,8 @@ class RestHelp extends RestModel
 		if( $this->format == 'html' ) {
 			//Need to render the Markdown text
 			
-			include_once ROOT_DIR.MARKDOWN_LIB;
-			include_once ROOT_DIR.MARKDOWN_EXTRA_LIB;
+			include_once MARKDOWN_LIB;
+			include_once MARKDOWN_EXTRA_LIB;
 			$html = \Michelf\MarkdownExtra::defaultTransform($md);
 			
 			$html = "<html><head>\n"
@@ -178,8 +178,8 @@ class RestHelp extends RestModel
 		if( $this->format == 'html' ) {
 			//Need to render the Markdown text
 			
-			include_once ROOT_DIR."MARKDOWN_LIB";
-			include_once ROOT_DIR.MARKDOWN_EXTRA_LIB;
+			include_once MARKDOWN_LIB;
+			include_once MARKDOWN_EXTRA_LIB;
 			$html = \Michelf\MarkdownExtra::defaultTransform($text);
 			
 			$html = "<html><head>\n"
@@ -264,8 +264,8 @@ class RestHelp extends RestModel
 				$result .= "<b>None</b>";
 			}
 			if( $mdextra ) {
-				include_once ROOT_DIR."/lib/Michelf/engine/vendor/Markdown.php";
-				include_once ROOT_DIR."/lib/Michelf/engine/vendor/MarkdownExtra.php";
+				include_once MARKDOWN_LIB;
+				include_once MARKDOWN_EXTRA_LIB;
 				$result .= \Michelf\MarkdownExtra::defaultTransform($mdextra);
 			}
 			$result .= "</body></html>\n";
@@ -313,8 +313,8 @@ class RestHelp extends RestModel
 		if( file_exists($mdpath) ) {
 			$help = file_get_contents($mdpath);
 			if( $this->format == 'html' ) {
-				include_once ROOT_DIR."/lib/Michelf/engine/vendor/Markdown.php";
-				include_once ROOT_DIR."/lib/Michelf/engine/vendor/MarkdownExtra.php";
+				include_once MARKDOWN_LIB;
+				include_once MARKDOWN_EXTRA_LIB;
 				$help = \Michelf\MarkdownExtra::defaultTransform($help);
 			}
 		} else

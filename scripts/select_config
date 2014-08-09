@@ -5,7 +5,7 @@ if [ "$config" = "" ]; then
 fi
 
 toself=$(dirname $0)
-root="$toself/../../.."
+root="$toself/.." #From where we will be symlinked, this is the path.
 phpconfIn="$root/config/config.$config.php"
 phpconfOut="$root/config/config.php"
 jsconfIn="$root/config/config.$config.js"

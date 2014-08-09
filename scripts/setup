@@ -24,6 +24,7 @@ function main() {
 	linkScripts();
 	copyTemplates();
 	installIndex();
+	writeGitIgnore();
 	
 	echo "== Done ==" . PHP_EOL;
 	
@@ -50,6 +51,8 @@ function createDirs() {
 	mkdirLog("app/models");
 	mkdirLog("app/views");
 	mkdirLog("app/views/layouts");
+	mkdirLog("cache");
+	`chmod 666 cache` #this makes it much easier, but you should restrict to your web user.
 	mkdirLog("config");
 	mkdirLog("public");
 	mkdirLog("scripts");
@@ -85,7 +88,7 @@ function installIndex() {
 }
 
 function copyTemplates() {
-	$tplDir = "lib/engine/scripts/templates/setup";
+	$tplDir = "lib/engine/scripts/templates/setup/";
 	copyTpls($tplDir,"./");
 }
 
@@ -93,12 +96,33 @@ function copyTpls($from, $to) {
 	echo "Copying templates to \"$to\"" . PHP_EOL;
 	$tpls = scandir($from);
 	foreach($tpls as $tpl) {
+		if( substr($tpl,0,1) == "." ) continue; //skip invisibles, especially "." and ".."
 		if( is_dir($from.$tpl) ) {
-			copyTpls($from.$tpl, $to.$tpl);
+			if( is_dir($to.$tpl) || mkdir($to.$tpl) ) {
+				copyTpls($from.$tpl.'/', $to.$tpl.'/');
+			} else {
+				echo "ERROR: Failed to make dir for templates at \"$to$tpl\"" . PHP_EOL;
+			}
 		} else {
+			//echo "cp \"$from$tpl\" \"$to$tpl\"" . PHP_EOL;
 			`cp "$from$tpl" "$to$tpl"`;
 		}
 	}
+}
+
+function writeGitIgnore() {
+	$ignore = array(
+		".DS_Store",
+		"config.*.php",
+		"config.*.js",
+		"htaccess.*.conf",
+		"config/config.php",
+		"config/config.js",
+		".htaccess",
+		"cache",
+		"work"
+	);
+	file_put_contents(".gitignore",implode(PHP_EOL, $ignore));
 }
 
 

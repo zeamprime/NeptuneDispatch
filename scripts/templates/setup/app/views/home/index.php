@@ -2,9 +2,11 @@
 	<div class='row'>
 		<div class='col-md-12' id='center-banner'>
 			
+			<br/><br/><br/>
 			<p>
 			Hello, this is my <i>shiny</i>, <b>new</b> project
 			</p>
+			<br/><br/><br/>
 			
 		</div>
 	</div>
