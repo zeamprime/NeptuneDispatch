@@ -6,10 +6,11 @@
 *	Simple version, so I just have a migrations folder with files named 1.php ... n.php and the
 *	script will look for the 'database_version' table or else create it.
 */
-define('MIGRATIONS_DIR',dirname(__FILE__).'/../app/migrations');
+$ROOT_DIR = dirname(__FILE__).'/../../..';
+define('MIGRATIONS_DIR',$ROOT_DIR.'/app/migrations');
 define('VERSION','1.1');
-include_once dirname(__FILE__).'/../lib/engine/autoload.php';
-require_once dirname(__FILE__).'/../config/config.php'; //for database
+include_once $ROOT_DIR.'/lib/engine/autoload.php';
+require_once $ROOT_DIR.'/config/config.php'; //for database
 
 
 /**

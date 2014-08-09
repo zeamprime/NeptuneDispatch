@@ -5,10 +5,11 @@ if [ "$config" = "" ]; then
 fi
 
 toself=$(dirname $0)
-phpconfIn="$toself/../config/config.$config.php"
-phpconfOut="$toself/../config/config.php"
-jsconfIn="$toself/../config/config.$config.js"
-jsconfOut="$toself/../config/config.js"
+root="$toself/../../.."
+phpconfIn="$root/config/config.$config.php"
+phpconfOut="$root/config/config.php"
+jsconfIn="$root/config/config.$config.js"
+jsconfOut="$root/config/config.js"
 
 if [ ! -f "$jsconfIn" ]; then
 	echo "Cannot find Node.js config file for $config"
@@ -25,8 +26,8 @@ cp -f "$jsconfIn" "$jsconfOut"
 cp -f "$phpconfIn" "$phpconfOut"
 
 # Maybe have .htaccess file to use too
-htaccessIn="$toself/../config/htaccess.$config.conf"
+htaccessIn="$root/config/htaccess.$config.conf"
 if [ -f "$htaccessIn" ]; then
-	cp -f "$htaccessIn" "$toself/../.htaccess"
+	cp -f "$htaccessIn" "$root/.htaccess"
 fi
 

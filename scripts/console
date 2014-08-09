@@ -1,13 +1,15 @@
 #!/usr/bin/php
 <?php
-/**	(c) 2011-2014 Everett Morse
+/**	
+ * @author Everett Morse
+ * @copyright (c) 2011-2014 Everett Morse
  *	www.neptic.com
  *	
  *	Implement a REPL similar to Ruby on Rails's console, since PHP has no interactive shell to use.
  */
 
 //Load the same environment as the web app
-define('ROOT_DIR',realpath(dirname(__FILE__) . '/..'));
+define('ROOT_DIR',realpath(dirname(__FILE__) . '/../../..'));
 include_once ROOT_DIR.'/config/config.php';
 include_once ROOT_DIR.'/lib/engine/autoload.php';
 

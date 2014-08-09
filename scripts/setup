@@ -14,7 +14,91 @@
  * Entry point.
  */
 function main() {
+	if( !isInProjectDir() ) {
+		echo "You should create a project directory with the engine code located in lib/engine/" .
+				PHP_EOL;
+		exit 1;
+	}
 	
+	createDirs();
+	linkScripts();
+	copyTemplates();
+	installIndex();
+	
+	echo "== Done ==" . PHP_EOL;
+	
+	echo PHP_EOL;
+	echo "TODO: " . PHP_EOL;
+	echo " - Read README." . PHP_EOL;
+	echo " - Create project GIT/SVN repo." . PHP_EOL;
+	echo " - Edit config/htaccess.example.php to point to your project directory." . PHP_EOL;
+	echo " - Edit config/config.example.php (and rename)" . PHP_EOL;
+	echo " - Run ./scripts/select_config example" . PHP_EOL;
+	echo " - Build stuff!" . PHP_EOL;
+	echo PHP_EOL;
+}
+
+function isInProjectDir() {
+	return file_exists("lib/engine") && is_dir("lib/engine");
+}
+
+function createDirs() {
+	mkdirLog("app");
+	mkdirLog("app/api");
+	mkdirLog("app/controllers");
+	mkdirLog("app/migrations");
+	mkdirLog("app/models");
+	mkdirLog("app/views");
+	mkdirLog("app/views/layouts");
+	mkdirLog("config");
+	mkdirLog("public");
+	mkdirLog("scripts");
+	mkdirLog("test");
+	mkdirLog("work");
+}
+
+function mkdirLog($dir) {
+	if( mkdirLog($dir) ) {
+		echo "Created: $dir" . PHP_EOL;
+	} else {
+		echo "ERROR: failed to make directory \"{$dir}\"" . PHP_EOL;
+		exit 1;
+	}
+}
+
+function linkScripts() {
+	echo "Linking scripts ..." . PHP_EOL;
+	chdir("scripts");
+	$scriptPath = "../lib/engine/scripts/";
+	$scripts = scandir($scriptPath);
+	foreach($scripts as $script) {
+		if( !is_dir($scriptPath.$script) && is_executable($scriptPath.$script) ) {
+			`ln -s "{$scriptPath}$script" "$script"`
+		}
+	}
+	chdir("..");
+}
+
+function installIndex() {
+	echo "Installing index.php ..." . PHP_EOL;
+	`cp lib/engine/index.php index.php`;
+}
+
+function copyTemplates() {
+	$tplDir = "lib/engine/scripts/templates/setup";
+	copyTpls($tplDir,"./")
+}
+
+function copyTpls($from, $to) {
+	echo "Copying templates to \"$to\"" . PHP_EOL;
+	$tpls = scandir($from);
+	foreach($tpls as $tpl) {
+		if( is_dir($from.$tpl) ) {
+			copyTpls($from.$tpl, $to.$tpl);
+		} else {
+			`cp "$from$tpl" "$to$tpl"`;
+		}
+	}
 }
 
 
