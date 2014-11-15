@@ -12,7 +12,14 @@ Features:
 
 ## Geting Started
 
-Download the repository or set it as a Git Submodule. Place this in `lib/engine` in your project. Then:
+Download the repository or set it as a Git Submodule. Place this in `lib/engine` in your project. For example:
+
+    mkdir myproject
+    cd myproject
+    git init
+    git submodule add https://github.com/zeamprime/NeptuneDispatch.git lib/engine`
+
+Then:
 
 `./lib/engine/scripts/setup`
 
