@@ -1,7 +1,7 @@
 <?php
 /**
  * @author Everett Morse
- * Copyright (c) 2014 Everett Morse. All rights reserved.
+ * @copyright (c) 2014 Everett Morse. All rights reserved.
  * www.neptic.com
  *
  * 

@@ -794,7 +794,7 @@ class ActiveDbObject extends DbObject
 		return self::$objectCache[$x->table][$id];
 	}
 	
-	static function exists($id) {
+	static function exists($id, $where = null) {
 		$class = get_called_class();
 		$x = new $class(); //constructor is what determins table name
 		
@@ -802,7 +802,12 @@ class ActiveDbObject extends DbObject
 		if( isset(self::$objectCache[$x->table][$id]) )
 			return true;
 		
-		$where = Db::buildWhere(array( $x->idColumn => $id ));
+		if( $where !== null ) {
+			$where[$x->idColumn] = $id;
+		} else {
+			$where = array( $x->idColumn => $id );
+		}
+		$where = Db::buildWhere($where);
 		$exists = Db::getValue("select 1 from ".Db::table($x->table)." where ".$where);
 		return $exists === '1';
 	}

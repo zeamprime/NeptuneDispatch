@@ -272,7 +272,7 @@ function replaceTemplates($file, $templates) {
 function generateFile($relative_path, $template, $values) {
 	global $opts;
 	
-	$path = dirname(__FILE__).'/../app/'.$relative_path;
+	$path = dirname(__FILE__).'/../../../app/'.$relative_path;
 	
 	$real = realpath($path);
 	if( $real === false )
