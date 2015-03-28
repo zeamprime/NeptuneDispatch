@@ -1,5 +1,5 @@
 <?php
-/**	(c) 2009 Everett Morse
+/**	(c) 2009-2015 Everett Morse
 *	@author Everett Morse - www.neptic.com
 *	
 *	A collection of useful methods.  They are all static methods on the Util class so they can be
@@ -277,6 +277,19 @@ class Util
 		if( get_magic_quotes_gpc() )
 			return stripslashes($in);
 		return $in;
+	}
+	
+	/**
+	 * String utils
+	 */
+	static function str_endswith($str, $search) {
+		return (substr($str, strlen($str) - strlen($search)) == $search);
+	}
+	static function str_startswith($str, $search) {
+		return (substr($str, 0, strlen($search)) == $search);
+	}
+	static function str_contains($str, $search) {
+		return (strpos($str, $search) !== false);
 	}
 }
 ?>
