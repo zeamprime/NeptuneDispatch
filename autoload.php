@@ -18,6 +18,15 @@ function np_autoload($className) {
 		return true;
 	}
 	
+	if( Util::str_endswith($className, 'Mailer') ) {
+		$mailerBase = dirname(__FILE__).'/../../app/controllers/';
+		$path = $mailerBase.Util::underscore($className).'.php';
+		if( file_exists($path) ) {
+			include_once $path;
+			return true;
+		}
+	}
+	
 	$path = $base.'class.'.$className.'.php';
 	if( file_exists($path) ) {
 		include_once $path;

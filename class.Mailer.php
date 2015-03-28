@@ -39,9 +39,9 @@ class Mailer extends PHPMailer
 		if( self::$DEFAULT_PORT != '' && $this->Port == '' )
 			$this->Port = self::$DEFAULT_PORT;
 		
-		if( self::$DEFAULT_AUTH != '' && $this->Username == '' ) {
+		if( self::$DEFAULT_AUTH_USER != '' && $this->Username == '' ) {
 			$this->SMTPAuth = true;
-			$this->Username = self::$DEFAULT_AUTH;
+			$this->Username = self::$DEFAULT_AUTH_USER;
 		}
 		if( self::$DEFAULT_AUTH_PASS != '' && $this->Password == '' )
 			$this->Password = self::$DEFAULT_AUTH_PASS;
@@ -74,11 +74,15 @@ class Mailer extends PHPMailer
 			else
 				$this->AltBody = $txt;
 		}
+		
+		if( $this->Body == '' ) {
+			throw new RestException(null, "Could not find email view {$view}");
+		}
 	}
 	
 	private function replace($tpl, $data) {
 		foreach($data as $name => $value) {
-			$tpl = str_replace($tpl, "{%{$name}%}", $value);
+			$tpl = str_replace("{%{$name}%}", $value, $tpl);
 		}
 		return $tpl;
 	}
@@ -94,7 +98,7 @@ class Mailer extends PHPMailer
         	$this->render($this->view, $this->data);
         }
         
-        return parent::send()
+        return parent::send();
     }
 	
 }

@@ -33,4 +33,11 @@ define('PASS_SECRET',"asbcdefghijksldf");
 
 /* Add middleware as comma-separated lists */
 define('API_MIDDLEWARE','HMAC,RequireUser');
+
+/* Configure email */
+Mailer::DEFAULT_HOST = "smtp.gmail.com";
+Mailer::DEFAULT_AUTH_USER = "username";
+Mailer::DEFAULT_AUTH_PASS = "password";
+Mailer::DEFAULT_FROM = "robot@example.com";
+
 ?>

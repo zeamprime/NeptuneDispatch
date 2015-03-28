@@ -818,6 +818,16 @@ class ActiveDbObject extends DbObject
 		return self::getObjectsWhere($where, $x->table, $x->idColumn, $orderBy);
 	}
 	
+	static function first($where, $orderBy = null) {
+		if( !is_array($where) )
+			$where = array();
+		$where['limit'] = 1;
+		$class = get_called_class();
+		$x = new $class();
+		$list = self::getObjectsWhere($where, $x->table, $x->idColumn, $orderBy);
+		return $list[0];
+	}
+	
 }
 
 ?>

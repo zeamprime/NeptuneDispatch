@@ -11,7 +11,7 @@ include_once dirname(__FILE__).'/../autoload.php';
 
 
 //Config
-$VERBS = array('help','controller','migration','model', 'view', 'layout', 'api');
+$VERBS = array('help','controller','migration','model', 'view', 'layout', 'api', 'mailer');
 $FLAGS = array(
 	'api' => array(
 		'g' => array(false, "Generate help files (vs. dynamically when requested)")
@@ -32,14 +32,15 @@ function main($args) {
 		$opts['edit'] = true;
 		array_splice($args, $i, 1);
 	}
-	if( array_search('-h', $args) !== false ) {
-		help();
-		exit;
-	}
 	
 	$verb = $args[1];
 	if( !in_array($verb, $VERBS) ) {
 		help();
+		exit;
+	}
+	
+	if( array_search('-h', $args) !== false ) {
+		help($verb);
 		exit;
 	}
 	
@@ -70,6 +71,7 @@ function main($args) {
 
 function help($verb = null) {
 	global $FLAGS;
+	echo "\n";
 	switch($verb) {
 		case 'controller':
 			echo "Generates a controller of the specified name using the template.\n";
@@ -92,10 +94,18 @@ function help($verb = null) {
 		case 'api':
 			echo "Generate a REST API model controller. Specify model name.\n";
 			break;
+		case 'mailer':
+			echo "Generate a Mailer controller and HTML and TXT views for it.\n";
+			echo "E.g. ./scripts/generate mailer welcome\n";
+			break;
 		default:
 			
-			echo "USAGE: ./script/generate <type> [flags] <name>\n\n";
+			echo "USAGE: ./script/generate <type> [flags] <name>\n";
 			echo "    or ./script/generate help [type]\n";
+			echo "\n";
+			echo "Name can be camel case or with underscores. It will be converted to the right\n";
+			echo "format by each template.\n";
+			echo "\n";
 			echo "Available types:\n";
 			echo "\tcontroller\n";
 			echo "\tmodel\n";
@@ -103,7 +113,9 @@ function help($verb = null) {
 			echo "\tview\n";
 			echo "\tlayout\n";
 			echo "\tapi\n";
-			echo "\nGlobal Flags:\n";
+			echo "\tmailer\n";
+			echo "\n";
+			echo "Global Flags:\n";
 			echo "\t-h -- Synonymn for 'help' verb\n";
 			echo "\t-e -- Open in TextWrangler when done\n";
 			break;
@@ -249,6 +261,25 @@ function api($name, $flags) {
 		$values['METHOD'] = 'DELETE'; $values['OpName'] = 'Delete';
 		generateFile('api/help/'.$fileForm.'-delete.md', 'RestHelp.md', $values);
 	}
+}
+
+function mailer($name, $flags) {
+	$name = trim($name);
+	if( !$name ) {
+		echo "Missing name!\n\n";
+		help('mailer');
+		return;
+	}
+	
+	$classForm = Util::camelizeClass($name); //might have been given as underscores
+	$fileForm = Util::underscore($classForm);
+	$values = array(
+		'ClassName' => $classForm,
+		'file_name' => $fileForm
+	);
+	generateFile('controllers/'.$fileForm.'_mailer.php', 'Mailer', $values);
+	generateFile('views/mailers/'.$fileForm.'.html', 'MailerHTML', $values);
+	generateFile('views/mailers/'.$fileForm.'.txt', 'MailerTXT', $values);
 }
 
 //////////// HELPER FUNCTIONS //////////////
