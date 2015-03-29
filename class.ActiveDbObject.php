@@ -463,7 +463,7 @@ class ActiveDbObject extends DbObject
 			}
 		}
 		if( isset($this->has_a[$name]) ) {
-			//Key is in the other table
+			//Key is in the this table
 			list($table, $column) = $this->has_a[$name];
 			//echo "Checking has_a $name ($table,$column)\n";
 			
@@ -475,7 +475,7 @@ class ActiveDbObject extends DbObject
 				return $this->linked[$name];
 			} else {
 				$list = self::getObjectsWhere(
-					array($column => $this->data[$this->idColumn]),
+					array($x->idColumn => $this->data[$column]),
 					$table, 
 					$x->idColumn
 				);
